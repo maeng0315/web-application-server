@@ -3,10 +3,13 @@ package webserver;
 import java.io.*;
 import java.net.Socket;
 import java.nio.file.Files;
+import java.util.Map;
 
+import db.DataBase;
 import model.User;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import util.HttpRequestUtils;
 import util.IOUtils;
 import util.ParserUtils;
 import util.SplitUtils;
@@ -35,6 +38,8 @@ public class RequestHandler extends Thread {
             log.debug("url : {}", url);
             String methodType = SplitUtils.getMethodType(read);
             String responseCode = "200";
+            boolean isLoginPage = false;
+            boolean isLogin = false;
             printHeader(br, read);
 
             String requestPath = ParserUtils.getRequestPath(url);
@@ -45,10 +50,28 @@ public class RequestHandler extends Thread {
             }
             log.debug("queryString : {}", queryString);
 
-            User user = getUser(requestPath, queryString);
-            if (user != null) {
+            if ("/user/create".equals(requestPath)) {
+                User user = ParserUtils.getUser(queryString);
+                if (user != null) {
+                    log.debug("user : {}", user);
+                    DataBase.addUser(user);
+                    responseCode = "302";
+                    requestPath = "/index.html";
+                }
+            }
+
+            if ("/user/login".equals(requestPath)) {
+                isLoginPage = true;
                 responseCode = "302";
-                requestPath = "/index.html";
+                requestPath = "/user/login_failed.html";
+                Map<String, String> queryMap = HttpRequestUtils.parseQueryString(queryString);
+                User findUser = DataBase.findUserById(queryMap.get("userId"));
+                if (findUser != null) {
+                    if (findUser.getPassword().equals(queryMap.get("password"))) {
+                        isLogin = true;
+                        requestPath = "/index.html";
+                    }
+                }
             }
 
             DataOutputStream dos = new DataOutputStream(out);
@@ -56,20 +79,11 @@ public class RequestHandler extends Thread {
 //            byte[] body = "Hello Maeng".getBytes();
             byte[] body = Files.readAllBytes(new File("./webapp" + requestPath).toPath());
 
-            responseHeader(dos, body.length, responseCode, requestPath);
+            responseHeader(dos, body.length, responseCode, requestPath, isLogin, isLoginPage);
             responseBody(dos, body);
         } catch (IOException e) {
             log.error(e.getMessage());
         }
-    }
-
-    private User getUser(String requestPath, String queryString) {
-        if ("/user/create".equals(requestPath)) {
-            User user = ParserUtils.getUser(queryString);
-            log.debug("user : {}", user);
-            return user;
-        }
-        return null;
     }
 
     private void printHeader(BufferedReader br, String read) throws IOException {
@@ -82,13 +96,16 @@ public class RequestHandler extends Thread {
         }
     }
 
-    private void responseHeader(DataOutputStream dos, int lengthOfBodyContent, String responseCode, String requestPath) {
+    private void responseHeader(DataOutputStream dos, int lengthOfBodyContent, String responseCode, String requestPath, boolean isLogin, boolean isLoginPage) {
         try {
             dos.writeBytes("HTTP/1.1 " + responseCode + " OK \r\n");
             dos.writeBytes("Content-Type: text/html;charset=utf-8\r\n");
+            if (isLoginPage) {
+                dos.writeBytes("Set-Cookie: logined="+isLogin+"\r\n");
+            }
             dos.writeBytes("Content-Length: " + lengthOfBodyContent + "\r\n");
             if ("302".equals(responseCode)) {
-                dos.writeBytes("Location: "+requestPath);
+                dos.writeBytes("Location: "+requestPath + "\r\n");
             }
             dos.writeBytes("\r\n");
         } catch (IOException e) {
