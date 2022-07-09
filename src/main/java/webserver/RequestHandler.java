@@ -4,8 +4,10 @@ import java.io.*;
 import java.net.Socket;
 import java.nio.file.Files;
 
+import model.User;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import util.ParserUtils;
 import util.SplitUtils;
 
 public class RequestHandler extends Thread {
@@ -26,21 +28,36 @@ public class RequestHandler extends Thread {
 
             BufferedReader br = new BufferedReader(new InputStreamReader(in));
             String read = br.readLine();
-            String url = SplitUtils.getUrl(read);
-            log.debug("request url : {}", url);
-            while (!"".equals(read) && read != null) {
-                log.debug("read : {}", read);
-                read = br.readLine();
-            }
+            String url = SplitUtils.getUrl(read);;
+            String requestPath = ParserUtils.getRequestPath(url);
+            log.debug("url : {}", url);
+            log.debug("requestPath : {}", requestPath);
+            printHeader(br, read);
+            User user = getUser(requestPath, url);
+            log.debug("user : {}", user);
 
             DataOutputStream dos = new DataOutputStream(out);
 
 //            byte[] body = "Hello Maeng".getBytes();
-            byte[] body = Files.readAllBytes(new File("./webapp" + url).toPath());
+            byte[] body = Files.readAllBytes(new File("./webapp" + requestPath).toPath());
             response200Header(dos, body.length);
             responseBody(dos, body);
         } catch (IOException e) {
             log.error(e.getMessage());
+        }
+    }
+
+    private User getUser(String requestPath, String url) {
+        if ("/user/create".equals(requestPath)) {
+            return ParserUtils.getUser(ParserUtils.getQueryString(url));
+        }
+        return null;
+    }
+
+    private void printHeader(BufferedReader br, String read) throws IOException {
+        while (!"".equals(read) && read != null) {
+            log.debug("read : {}", read);
+            read = br.readLine();
         }
     }
 
@@ -63,4 +80,5 @@ public class RequestHandler extends Thread {
             log.error(e.getMessage());
         }
     }
+
 }
