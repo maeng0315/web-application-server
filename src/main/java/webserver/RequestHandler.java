@@ -21,6 +21,8 @@ public class RequestHandler extends Thread {
 
     private int contentLength = 0;
 
+    private boolean isLoginCookie = false;
+
     public RequestHandler(Socket connectionSocket) {
         this.connection = connectionSocket;
     }
@@ -40,6 +42,7 @@ public class RequestHandler extends Thread {
             String responseCode = "200";
             boolean isLoginPage = false;
             boolean isLogin = false;
+
             printHeader(br, read);
 
             String requestPath = ParserUtils.getRequestPath(url);
@@ -74,6 +77,13 @@ public class RequestHandler extends Thread {
                 }
             }
 
+            if ("/user/list".equals(requestPath)) {
+                if (!isLoginCookie) {
+                    responseCode = "302";
+                    requestPath = "/index.html";
+                }
+            }
+
             DataOutputStream dos = new DataOutputStream(out);
 
 //            byte[] body = "Hello Maeng".getBytes();
@@ -91,6 +101,10 @@ public class RequestHandler extends Thread {
             if (read.startsWith("Content-Length:")) {
                 contentLength = Integer.parseInt(read.split(":")[1].trim());
             }
+            if (read.startsWith("Cookie:")) {
+                Map<String, String> parseCookies = HttpRequestUtils.parseCookies(read.split("Cookie:")[1].trim());
+                isLoginCookie = Boolean.parseBoolean(parseCookies.get("logined"));
+            }
             log.debug("read : {}", read);
             read = br.readLine();
         }
@@ -98,8 +112,12 @@ public class RequestHandler extends Thread {
 
     private void responseHeader(DataOutputStream dos, int lengthOfBodyContent, String responseCode, String requestPath, boolean isLogin, boolean isLoginPage) {
         try {
+            String contentType = "text/html;charset=utf-8\r\n";
+            if (requestPath.indexOf(".css") > 0) {
+                contentType = "text/css\r\n";
+            }
             dos.writeBytes("HTTP/1.1 " + responseCode + " OK \r\n");
-            dos.writeBytes("Content-Type: text/html;charset=utf-8\r\n");
+            dos.writeBytes("Content-Type: "+contentType);
             if (isLoginPage) {
                 dos.writeBytes("Set-Cookie: logined="+isLogin+"\r\n");
             }
