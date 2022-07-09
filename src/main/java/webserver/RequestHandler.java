@@ -34,6 +34,7 @@ public class RequestHandler extends Thread {
             String url = SplitUtils.getUrl(read);
             log.debug("url : {}", url);
             String methodType = SplitUtils.getMethodType(read);
+            String responseCode = "200";
             printHeader(br, read);
 
             String requestPath = ParserUtils.getRequestPath(url);
@@ -45,12 +46,17 @@ public class RequestHandler extends Thread {
             log.debug("queryString : {}", queryString);
 
             User user = getUser(requestPath, queryString);
+            if (user != null) {
+                responseCode = "302";
+                requestPath = "/index.html";
+            }
 
             DataOutputStream dos = new DataOutputStream(out);
 
 //            byte[] body = "Hello Maeng".getBytes();
             byte[] body = Files.readAllBytes(new File("./webapp" + requestPath).toPath());
-            response200Header(dos, body.length);
+
+            responseHeader(dos, body.length, responseCode, requestPath);
             responseBody(dos, body);
         } catch (IOException e) {
             log.error(e.getMessage());
@@ -76,11 +82,14 @@ public class RequestHandler extends Thread {
         }
     }
 
-    private void response200Header(DataOutputStream dos, int lengthOfBodyContent) {
+    private void responseHeader(DataOutputStream dos, int lengthOfBodyContent, String responseCode, String requestPath) {
         try {
-            dos.writeBytes("HTTP/1.1 200 OK \r\n");
+            dos.writeBytes("HTTP/1.1 " + responseCode + " OK \r\n");
             dos.writeBytes("Content-Type: text/html;charset=utf-8\r\n");
             dos.writeBytes("Content-Length: " + lengthOfBodyContent + "\r\n");
+            if ("302".equals(responseCode)) {
+                dos.writeBytes("Location: "+requestPath);
+            }
             dos.writeBytes("\r\n");
         } catch (IOException e) {
             log.error(e.getMessage());
