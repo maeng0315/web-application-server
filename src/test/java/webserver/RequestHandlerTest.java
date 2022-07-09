@@ -15,7 +15,6 @@ public class RequestHandlerTest {
 
     @Test
     public void HTTP_HEADER_URL_추출() {
-
         // Given (준비) | 테스트 준비 과정, 테스트에 사용 되는 변수, 입력 값 등을 정의, Mock 객체 정의
         String httpHeader = "GET /index.html HTTP/1.1";
 
@@ -28,7 +27,6 @@ public class RequestHandlerTest {
 
     @Test
     public void GET_URL_리퀘스트패스_쿼리파라미터_분리() {
-
         // given
         String url = "/user/create?userId=maeng0315&password=40492923aA%21&name=parkmj&email=dakma%40naver.com";
 
@@ -43,7 +41,6 @@ public class RequestHandlerTest {
 
     @Test
     public void GET_쿼리파라미터_User객체_생성() {
-
         // Given (준비)
         String queryString = "userId=maeng0315&password=40492923aA%21&name=parkmj&email=dakma%40naver.com";
         User mockUser = new User("maeng0315", "40492923aA!", "parkmj", "dakma@naver.com");

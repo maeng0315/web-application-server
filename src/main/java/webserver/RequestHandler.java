@@ -7,6 +7,7 @@ import java.nio.file.Files;
 import model.User;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import util.IOUtils;
 import util.ParserUtils;
 import util.SplitUtils;
 
@@ -14,6 +15,8 @@ public class RequestHandler extends Thread {
     private static final Logger log = LoggerFactory.getLogger(RequestHandler.class);
 
     private Socket connection;
+
+    private int contentLength = 0;
 
     public RequestHandler(Socket connectionSocket) {
         this.connection = connectionSocket;
@@ -28,13 +31,20 @@ public class RequestHandler extends Thread {
 
             BufferedReader br = new BufferedReader(new InputStreamReader(in));
             String read = br.readLine();
-            String url = SplitUtils.getUrl(read);;
-            String requestPath = ParserUtils.getRequestPath(url);
+            String url = SplitUtils.getUrl(read);
             log.debug("url : {}", url);
-            log.debug("requestPath : {}", requestPath);
+            String methodType = SplitUtils.getMethodType(read);
             printHeader(br, read);
-            User user = getUser(requestPath, url);
-            log.debug("user : {}", user);
+
+            String requestPath = ParserUtils.getRequestPath(url);
+            log.debug("requestPath : {}", requestPath);
+            String queryString = ParserUtils.getQueryString(url);
+            if ("POST".equals(methodType)) {
+                queryString = IOUtils.readData(br, contentLength);
+            }
+            log.debug("queryString : {}", queryString);
+
+            User user = getUser(requestPath, queryString);
 
             DataOutputStream dos = new DataOutputStream(out);
 
@@ -47,15 +57,20 @@ public class RequestHandler extends Thread {
         }
     }
 
-    private User getUser(String requestPath, String url) {
+    private User getUser(String requestPath, String queryString) {
         if ("/user/create".equals(requestPath)) {
-            return ParserUtils.getUser(ParserUtils.getQueryString(url));
+            User user = ParserUtils.getUser(queryString);
+            log.debug("user : {}", user);
+            return user;
         }
         return null;
     }
 
     private void printHeader(BufferedReader br, String read) throws IOException {
         while (!"".equals(read) && read != null) {
+            if (read.startsWith("Content-Length:")) {
+                contentLength = Integer.parseInt(read.split(":")[1].trim());
+            }
             log.debug("read : {}", read);
             read = br.readLine();
         }

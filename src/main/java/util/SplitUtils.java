@@ -6,4 +6,8 @@ public class SplitUtils {
         return readHeader.split(" ")[1];
     }
 
+    public static String getMethodType(String readHeader) {
+        return readHeader.split(" ")[0];
+    }
+
 }
