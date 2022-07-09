@@ -8,7 +8,7 @@ import static org.junit.Assert.*;
 public class RequestHandlerTest {
 
     @Test
-    public void HTTP_HEAD_URL_추출() {
+    public void HTTP_HEADER_URL_추출() {
 
         // Given (준비) | 테스트 준비 과정, 테스트에 사용 되는 변수, 입력 값 등을 정의, Mock 객체 정의
         String httpHeader = "GET /index.html HTTP/1.1";
