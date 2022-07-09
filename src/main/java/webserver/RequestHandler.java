@@ -5,6 +5,7 @@ import java.net.Socket;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import util.SplitUtils;
 
 public class RequestHandler extends Thread {
     private static final Logger log = LoggerFactory.getLogger(RequestHandler.class);
@@ -24,6 +25,8 @@ public class RequestHandler extends Thread {
 
             BufferedReader br = new BufferedReader(new InputStreamReader(in));
             String read = br.readLine();
+            String url = SplitUtils.getUrl(read);
+            log.debug("request url : {}", url);
             while (!"".equals(read) && read != null) {
                 log.debug("read : {}", read);
                 read = br.readLine();
