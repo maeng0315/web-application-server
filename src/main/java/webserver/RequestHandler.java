@@ -3,9 +3,12 @@ package webserver;
 import java.io.*;
 import java.net.Socket;
 import java.nio.file.Files;
+import java.util.Map;
 
+import model.User;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import util.HttpRequestUtils;
 
 public class RequestHandler extends Thread {
     private static final Logger log = LoggerFactory.getLogger(RequestHandler.class);
@@ -38,11 +41,21 @@ public class RequestHandler extends Thread {
                 log.debug("header : {}", line);
             }
 
-            DataOutputStream dos = new DataOutputStream(out);
+            String url = tokens[1];
+            if (url.startsWith("/user/create")) {
+                int queryStringStartIndex = url.indexOf("?") + 1;
+                String queryString = url.substring(queryStringStartIndex);
+                Map<String, String> requestHeaderParams = HttpRequestUtils.parseQueryString(queryString);
+
+                User user = new User(requestHeaderParams.get("userId"), requestHeaderParams.get("password"), requestHeaderParams.get("name"), requestHeaderParams.get("email"));
+                log.debug("user : {}", user);
+            } else {
+                DataOutputStream dos = new DataOutputStream(out);
 //            byte[] body = "Hello Maeng".getBytes();
-            byte[] body = Files.readAllBytes(new File("./webapp" + tokens[1]).toPath());
-            response200Header(dos, body.length);
-            responseBody(dos, body);
+                byte[] body = Files.readAllBytes(new File("./webapp" + tokens[1]).toPath());
+                response200Header(dos, body.length);
+                responseBody(dos, body);
+            }
         } catch (IOException e) {
             log.error(e.getMessage());
         }
