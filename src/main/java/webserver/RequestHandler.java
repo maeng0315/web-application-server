@@ -9,6 +9,7 @@ import model.User;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import util.HttpRequestUtils;
+import util.IOUtils;
 
 public class RequestHandler extends Thread {
     private static final Logger log = LoggerFactory.getLogger(RequestHandler.class);
@@ -35,19 +36,27 @@ public class RequestHandler extends Thread {
             }
 
             String[] tokens = line.split(" ");
+            int contentLength = 0;
 
             while (!"".equals(line)) {
                 line = br.readLine();
                 log.debug("header : {}", line);
+
+                if (line.contains("Content-Length")) {
+                    contentLength = getContentLength(line);
+                }
+
             }
 
             String url = tokens[1];
             if (url.startsWith("/user/create")) {
-                int queryStringStartIndex = url.indexOf("?") + 1;
-                String queryString = url.substring(queryStringStartIndex);
-                Map<String, String> requestHeaderParams = HttpRequestUtils.parseQueryString(queryString);
-
-                User user = new User(requestHeaderParams.get("userId"), requestHeaderParams.get("password"), requestHeaderParams.get("name"), requestHeaderParams.get("email"));
+                String requestBody = IOUtils.readData(br, contentLength);
+                log.debug("requestBody : {}", requestBody);
+//                int queryStringStartIndex = url.indexOf("?") + 1;
+//                String queryString = url.substring(queryStringStartIndex);
+                Map<String, String> requestBodyParams = HttpRequestUtils.parseQueryString(requestBody);
+                
+                User user = new User(requestBodyParams.get("userId"), requestBodyParams.get("password"), requestBodyParams.get("name"), requestBodyParams.get("email"));
                 log.debug("user : {}", user);
             } else {
                 DataOutputStream dos = new DataOutputStream(out);
@@ -59,6 +68,11 @@ public class RequestHandler extends Thread {
         } catch (IOException e) {
             log.error(e.getMessage());
         }
+    }
+
+    private int getContentLength(String line) {
+        String[] headerTokens = line.split(":");
+        return Integer.parseInt(headerTokens[1].trim());
     }
 
     private void response200Header(DataOutputStream dos, int lengthOfBodyContent) {
