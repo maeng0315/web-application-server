@@ -5,6 +5,7 @@ import java.net.Socket;
 import java.nio.file.Files;
 import java.util.Map;
 
+import db.DataBase;
 import model.User;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -58,18 +59,38 @@ public class RequestHandler extends Thread {
                 
                 User user = new User(requestBodyParams.get("userId"), requestBodyParams.get("password"), requestBodyParams.get("name"), requestBodyParams.get("email"));
                 log.debug("user : {}", user);
+                DataBase.addUser(user);
                 DataOutputStream dos = new DataOutputStream(out);
                 response302Header(dos, "/index.html");
+            } else if ("/user/login".equals(url)) {
+                String requestBody = IOUtils.readData(br, contentLength);
+                Map<String, String> requestBodyParams = HttpRequestUtils.parseQueryString(requestBody);
+                User user = DataBase.findUserById(requestBodyParams.get("userId"));
+                if (user == null) {
+                    responseResource(out, "/user/login_failed.html");
+                    return;
+                }
+
+                if (requestBodyParams.get("password").equals(user.getPassword())) {
+                    DataOutputStream dos = new DataOutputStream(out);
+                    response302LoginSuccessHeader(dos);
+                } else {
+                    responseResource(out, "/user/login_failed.html");
+                }
             } else {
-                DataOutputStream dos = new DataOutputStream(out);
-//            byte[] body = "Hello Maeng".getBytes();
-                byte[] body = Files.readAllBytes(new File("./webapp" + url).toPath());
-                response200Header(dos, body.length);
-                responseBody(dos, body);
+                responseResource(out, url);
             }
         } catch (IOException e) {
             log.error(e.getMessage());
         }
+    }
+
+    private void responseResource(OutputStream out, String url) throws IOException {
+        DataOutputStream dos = new DataOutputStream(out);
+//            byte[] body = "Hello Maeng".getBytes();
+        byte[] body = Files.readAllBytes(new File("./webapp" + url).toPath());
+        response200Header(dos, body.length);
+        responseBody(dos, body);
     }
 
     private int getContentLength(String line) {
@@ -92,6 +113,17 @@ public class RequestHandler extends Thread {
         try {
             dos.writeBytes("HTTP/1.1 302 Redirect \r\n");
             dos.writeBytes("Location: " + redirectUrl + "\r\n");
+            dos.writeBytes("\r\n");
+        } catch (IOException e) {
+            log.error(e.getMessage());
+        }
+    }
+
+    private void response302LoginSuccessHeader(DataOutputStream dos) {
+        try {
+            dos.writeBytes("HTTP/1.1 302 Redirect \r\n");
+            dos.writeBytes("Set-Cookie: logined=true \r\n");
+            dos.writeBytes("Location: /index.html \r\n");
             dos.writeBytes("\r\n");
         } catch (IOException e) {
             log.error(e.getMessage());
