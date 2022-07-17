@@ -29,6 +29,8 @@ public class RequestHandler extends Thread {
         try (InputStream in = connection.getInputStream(); OutputStream out = connection.getOutputStream()) {
             // TODO 사용자 요청에 대한 처리는 이 곳에 구현하면 된다.
 
+            HttpRequest request = new HttpRequest(in);
+
             BufferedReader br = new BufferedReader(new InputStreamReader(in, "UTF-8"));
             String line = br.readLine();
             log.debug("request line : {}", line);
@@ -56,6 +58,8 @@ public class RequestHandler extends Thread {
             }
 
             String url = tokens[1];
+
+            HttpResponse response = new HttpResponse(out);
 
             if (url.startsWith("/user/create")) {
                 String requestBody = IOUtils.readData(br, contentLength);
