@@ -25,7 +25,7 @@ public class HttpResponse {
 
     public void forward(String url) throws IOException {
         final byte[] body = forwardBody(url);
-        response200Header(body.length);
+        response200Header(body.length, "text/html;charset=utf-8");
         responseBody(body);
     }
 
@@ -33,10 +33,10 @@ public class HttpResponse {
         return Files.readAllBytes(new File("./webapp" + url).toPath());
     }
 
-    public void response200Header(int lengthOfBodyContent) {
+    public void response200Header(int lengthOfBodyContent, String contentType) {
         try {
             dos.writeBytes("HTTP/1.1 200 OK \r\n");
-            dos.writeBytes("Content-Type: text/html;charset=utf-8\r\n");
+            dos.writeBytes("Content-Type: " + contentType + "\r\n");
             dos.writeBytes("Content-Length: " + lengthOfBodyContent + "\r\n");
             processHeaders();
             dos.writeBytes("\r\n");
