@@ -7,11 +7,11 @@ import org.slf4j.LoggerFactory;
 
 import java.util.Collection;
 
-public class ListUserController implements Controller {
+public class ListUserController extends AbstractController {
     private static Logger log = LoggerFactory.getLogger(CreateUserController.class);
 
     @Override
-    public void service(HttpRequest request, HttpResponse response) {
+    public void doPost(HttpRequest request, HttpResponse response) {
         if (!request.isLogin()) {
             response.sendRedirect("/user/login.html");
             return;
@@ -29,5 +29,10 @@ public class ListUserController implements Controller {
         sb.append("</table>");
 
         response.forwardBody(sb.toString());
+    }
+
+    @Override
+    protected void doGet(HttpRequest request, HttpResponse response) {
+        doPost(request, response);
     }
 }

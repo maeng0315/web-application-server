@@ -5,19 +5,24 @@ import model.User;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-public class LoginController implements Controller {
+public class LoginController extends AbstractController {
     private static Logger log = LoggerFactory.getLogger(LoginController.class);
 
     @Override
-    public void service(HttpRequest request, HttpResponse response) {
+    public void doPost(HttpRequest request, HttpResponse response) {
         User user = DataBase.findUserById(request.getParameter("userId"));
         if (user != null) {
             if (request.getParameter("password").equals(user.getPassword())) {
                 response.addHeader("Set-Cookie", "logined=true");
                 response.sendRedirect("/index.html");
-            } else {
-                response.sendRedirect("/user/login_failed.html");
             }
+        } else {
+            response.sendRedirect("/user/login_failed.html");
         }
+    }
+
+    @Override
+    protected void doGet(HttpRequest request, HttpResponse response) {
+        doPost(request, response);
     }
 }
