@@ -35,8 +35,8 @@ public class RequestLine {
         }
     }
 
-    public String getMethod() {
-        return method.toString();
+    public HttpMethod getMethod() {
+        return method;
     }
 
     public String getPath() {

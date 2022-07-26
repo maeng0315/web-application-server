@@ -54,7 +54,7 @@ public class HttpRequest {
         return Boolean.parseBoolean(value);
     }
 
-    public String getMethod() {
+    public HttpMethod getMethod() {
         return requestLine.getMethod();
     }
 
